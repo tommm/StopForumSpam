@@ -24,7 +24,13 @@ You should have received a copy of the GNU General Public License along with thi
 If you do not have StopForumSpam installed, simply upload the plugin to your forum root (ensuring the folder structure is followed) and install via your ACP plugin manager.
 
 #### Upgrade
+##### Upgrading to 1.4.0
 If you're using StopForumSpam 1.2, first deactivate the existing plugin from your ACP. Upload the new plugin, overwriting all files. Go back to the ACP and reactivate the plugin. The upgrade process will start and all your existing settings will be carried forward into the new version.
+
+##### Upgrading to 1.4.1
+If you are already using 1.4.0, download the new version and upload to your forum overwriting all files. There is no need to deactivate or uninstall the plugin.
+
+Once upgraded, you can safely remove the file *./inc/plugins/stopforumspam_acp.php*.
 
 ### Using StopForumSpam
 Once installed, a new setting group is created called StopForumSpam Check; this can be found in the Configuration area in the ACP.
@@ -40,7 +46,7 @@ According to SFS, Confidence is the possibility that the user is a spammer. User
 After upgrading to 1.4, if you being to experience more spam than usual, lower the Confidence level until you find a happy medium (i.e. don't just whack to 0%). A level of 0% will deny any user who features in SFS's database (which is the same functionality of 1.2).
 
 #### Language Support
-1.4 supports multiple languages via MyBB's Language system. If you have more than one language pack installed, be sure to copy ./inc/languages/english/stopforumspam.lang.php to each of them and translate as required. 
+1.4 supports multiple languages via MyBB's Language system. If you have more than one language pack installed, be sure to copy ./inc/languages/english/stopforumspam.lang.php to each of them and translate as required. The *Check User Details* setting values are translated in the language file. For other settings, be sure to use the default method for translating settings.
 
 ### Support
 Please visit [Xekko Resources](http://resources.xekko.co.uk/forum-11.html "Visit Xekko Resources") or [MyBB Community Forums](http://community.mybb.com) for support.

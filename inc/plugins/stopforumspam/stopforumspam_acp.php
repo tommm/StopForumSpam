@@ -8,71 +8,72 @@ if(!defined("IN_MYBB"))
 if($mybb->input['module'] == 'config-settings' && $mybb->input['action'] == 'change')
 {
 	// Saving or loading settings
-	$plugins->add_hook('admin_config_settings_change', 'stopforumspam_save');
+	$plugins->add_hook('admin_page_output_header', 'stopforumspam_load');
+
+	if($mybb->request_method == 'post')
+	{
+		$plugins->add_hook('admin_config_settings_change', 'stopforumspam_save');
+	}
 }
 else
 {
 	return;
 }
 
-function stopforumspam_save()
+function stopforumspam_load()
 {
-	global $db, $mybb, $plugins;
+	global $groupinfo, $plugins;
 
 	// Check to see if this is our SFS setting group
-	$gid = (int)$mybb->input['gid'];
-
-	if($gid <= 21)
+	if(isset($groupinfo))
 	{
-		return;
-	}
-	elseif($gid > 21)
-	{
-		$query = $db->simple_select('settinggroups', 'gid', "name = 'stopforumspam'");
-		$this_group = $db->fetch_field($query, 'gid');
-
-		if($this_group != $gid)
+		if($groupinfo['name'] != 'stopforumspam')
 		{
 			return;
 		}
+
+		$plugins->add_hook('admin_formcontainer_output_row', 'stopforumspam_permissions');
 	}
+}
 
-	// This is our SFS setting group - save the data
-	if($mybb->request_method == 'post')
+function stopforumspam_save()
+{
+	global $db, $mybb;
+
+	// This is our SFS setting group - save the data if it exists
+	if(!isset($mybb->input['upsetting']['sp_confidence']))
 	{
-		$values = array();
-		$settings = array('username', 'email', 'ip');
-
-		foreach($settings as $setting)
-		{
-			$values[] = (isset($mybb->input['sfs_settings'][$setting])) ? intval($mybb->input['sfs_settings'][$setting]) : 0;
-		}
-
-		$mybb->input['upsetting']['sp_check'] = implode(',', $values);
 		return;
 	}
 
-	// Modify our setting so it's easier for users to manage
-	$plugins->add_hook('admin_formcontainer_output_row', 'stopforumspam_permissions');
+	$values = array();
+	foreach(array('username', 'email', 'ip') as $setting)
+	{
+		$values[] = (isset($mybb->input['sfs_settings'][$setting])) ? intval($mybb->input['sfs_settings'][$setting]) : 0;
+	}
+
+	$mybb->input['upsetting']['sp_check'] = implode(',', $values);
 }
 
 function stopforumspam_permissions(&$row)
 {
-	global $form, $mybb;
+	global $form, $lang, $mybb;
 
 	if($row['row_options']['id'] != 'row_setting_sp_check')
 	{
 		return;
 	}
 
+	$lang->load('stopforumspam', true);
+
 	$i = 1;
 	$row['content'] = '';
 	$cur_settings = explode(',', $mybb->settings['sp_check']);
 
 	$settings = array(
-		'username' => array('name' => 'Check Username?', 'description' => 'Check the username against StopForumSpam database?', 'value' => $cur_settings[0]),
-		'email' => array('name' => 'Check Email?', 'description' => 'Check the email against StopForumSpam database?', 'value' => $cur_settings[1]),
-		'ip' => array('name' => 'Check IP Address?', 'description' => 'Check the IP address against StopForumSpam database?', 'value' => $cur_settings[2]),
+		'username' => array('name' => $lang->admin_check_username, 'description' => $lang->admin_check_username_desc, 'value' => $cur_settings[0]),
+		'email' => array('name' => $lang->admin_check_email, 'description' => $lang->admin_check_email_desc, 'value' => $cur_settings[1]),
+		'ip' => array('name' => $lang->admin_check_ip, 'description' => $lang->admin_check_ip_desc, 'value' => $cur_settings[2]),
 	);
 
 	foreach($settings as $v => $p)
@@ -173,42 +174,43 @@ function stopforumspam_activate()
 		stopforumspam_1400();
 	}
 }
-	// Upgrade Functions
-	function stopforumspam_1400()
+
+// Upgrade Functions
+function stopforumspam_1400()
+{
+	global $db, $mybb;
+
+	$query = $db->simple_select('settinggroups', 'gid', "name = 'stopforumspam'");
+	$gid = $db->fetch_field($query, 'gid');
+
+	$settings = array(
+		'sp_check' => array(
+			'title' => 'Check User Details',
+			'description' => 'Select which information you want to check against SFS when a user registers:',
+			'optionscode' => 'text',
+			'value' => "{$mybb->settings['sp_user']},{$mybb->settings['sp_email']},{$mybb->settings['sp_ip']}",
+			'disporder' => 1,
+			'gid' => $gid
+		),
+		'sp_confidence' => array(
+			'title' => 'Confidence Level',
+			'description' => 'Select the minimum confidence level for checking spammers (the higher the level the more likely the user is a spammer). A user that generates a level higher than this will be denied registration.<br />Example: A user who has been mistakenly added to the spam database might generate a 0-20% level. A hardened spammer will be upwards of 40-50% and more.',
+			'optionscode' => "select\n0=0%\n10=10%\n20=20%\n30=30%\n40=40%\n50=50%\n60=60%\n70=70%\n80=80%\n90=90%\n100=100%",
+			'value' => 40,
+			'disporder' => 2,
+			'gid' => $gid
+		),
+	);
+
+	foreach($settings as $name => $setting)
 	{
-		global $db, $mybb;
-
-		$query = $db->simple_select('settinggroups', 'gid', "name = 'stopforumspam'");
-		$gid = $db->fetch_field($query, 'gid');
-
-		$settings = array(
-			'sp_check' => array(
-				'title' => 'Check User Details',
-				'description' => 'Select which information you want to check against SFS when a user registers:',
-				'optionscode' => 'text',
-				'value' => "{$mybb->settings['sp_user']},{$mybb->settings['sp_email']},{$mybb->settings['sp_ip']}",
-				'disporder' => 1,
-				'gid' => $gid
-			),
-			'sp_confidence' => array(
-				'title' => 'Confidence Level',
-				'description' => 'Select the minimum confidence level for checking spammers (the higher the level the more likely the user is a spammer). A user that generates a level higher than this will be denied registration.<br />Example: A user who has been mistakenly added to the spam database might generate a 0-20% level. A hardened spammer will be upwards of 40-50% and more.',
-				'optionscode' => "select\n0=0%\n10=10%\n20=20%\n30=30%\n40=40%\n50=50%\n60=60%\n70=70%\n80=80%\n90=90%\n100=100%",
-				'value' => 40,
-				'disporder' => 2,
-				'gid' => $gid
-			),
-		);
-
-		foreach($settings as $name => $setting)
-		{
-			$setting['name'] = $name;
-			$db->insert_query('settings', $setting);
-		}
-
-		// Delete old settings, not required anymore
-		$db->delete_query('settings', "name IN ('sp_user','sp_email','sp_ip','sp_mode')");
-
-		rebuild_settings();
+		$setting['name'] = $name;
+		$db->insert_query('settings', $setting);
 	}
+
+	// Delete old settings, not required anymore
+	$db->delete_query('settings', "name IN ('sp_user','sp_email','sp_ip','sp_mode')");
+
+	rebuild_settings();
+}
 ?>

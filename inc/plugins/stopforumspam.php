@@ -13,15 +13,15 @@ function stopforumspam_info()
 		'website'		=> 'https://github.com/tommm/stopforumspam',
 		'author'		=> "<a href='https://github.com/Tim-B'>Tim B.</a> and <a href='https://github.com/tommm/'>Tomm</a>",
 		'authorsite'	=> '',
-		'version'		=> '1.4',
+		'version'		=> '1.4.1',
 		'guid'			=> 'cd4d9e2f4a6975562887ee6edffb984e',
-		'compatibility' => '16*'
+		'compatibility' => '1*'
 	);
 }
 
 if(defined('IN_ADMINCP'))
 {
-	require_once MYBB_ROOT.'inc/plugins/stopforumspam_acp.php';
+	require_once MYBB_ROOT.'inc/plugins/stopforumspam/stopforumspam_acp.php';
 	return;
 }
 
@@ -32,33 +32,31 @@ function stopforumspam()
 	global $details, $lang, $mybb, $session;
 
 	$lang->load('stopforumspam');
-	$details = array('username' => urlencode($mybb->input['username']), 'email' => urlencode($mybb->input['email']), 'ip' => $session->ipaddress);
+	$details = array('username' => $mybb->input['username'], 'email' => $mybb->input['email'], 'ip' => $session->ipaddress, 'f' => 'json');
 
-	$url = "http://www.stopforumspam.com/api?ip={$details['ip']}&email={$details['email']}&username={$details['username']}&f=json";
-	$data = @file_get_contents($url);
+	$context = stream_context_create(array(
+		'http' => array(
+			'method' => 'GET'
+		)
+	));
+
+	$data = @file_get_contents("http://www.stopforumspam.com/api?".http_build_query($details), false, $context);
     $data = json_decode($data);
 
 	function sp_log($log)
 	{
-		$logfile = 'sfs_log.php';
 		$logmessage = '';
+		$logfile = 'sfs_log.php';
 
 		if(!file_exists($logfile))
 		{
-			$fileoption = 'w';
 			$logmessage = '<?php die(); ?>';
-		}
-		else
-		{
-			$fileoption = 'a';
 		}
 
 		$logmessage .= "\n";
 		$logmessage .= $log;
 
-		$fhandle = @fopen($logfile, $fileoption);
-		@fwrite($fhandle, $logmessage);
-		@fclose($fhandle);
+		@file_put_contents($logfile, $logmessage, FILE_APPEND);
 	}
 
 	if(isset($data->error) or !isset($data))
@@ -76,9 +74,9 @@ function stopforumspam()
 
 			$logstring = 'Error: '. $error;
 			$logstring .= " / Time: ".date(DATE_RSS, time());
-			$logstring .= ' / Username: '.$details['username'];
-			$logstring .= ' / Email: '.$details['email'];
-			$logstring .= ' / IP: '.$details['ip'];
+			$logstring .= ' / Username: '.htmlspecialchars_uni($details['username']);
+			$logstring .= ' / Email: '.htmlspecialchars_uni($details['email']);
+			$logstring .= ' / IP: '.htmlspecialchars_uni($details['ip']);
 
 			sp_log($logstring);
 		}
@@ -98,9 +96,9 @@ function stopforumspam()
 		if($mybb->settings['sp_log'])
 		{
 			$logstring = "Time: ".date(DATE_RSS, time());
-			$logstring .= ' / Username: '.$details['username'];
-			$logstring .= ' / Email: '.$details['email'];
-			$logstring .= ' / IP: '.$details['ip'];
+			$logstring .= ' / Username: '.htmlspecialchars_uni($details['username']);
+			$logstring .= ' / Email: '.htmlspecialchars_uni($details['email']);
+			$logstring .= ' / IP: '.htmlspecialchars_uni($details['ip']);
 
 			sp_log($logstring);
 		}
