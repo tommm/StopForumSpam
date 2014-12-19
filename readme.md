@@ -1,4 +1,10 @@
-[![Xekko](http://xekko.co.uk/public/images/logo_xekko_color.png "Xekko Resources")](http://resources.xekko.co.uk "Xekko Resources")
+# NOTE - this plugin was folded into MyBB 1.8 core
+
+See [this issue](https://github.com/TommM/StopForumSpam/issues/3#issue-52524526 for details.
+
+This plugin is no longer supported.
+
+-----
 
 ## Stop Forum Spam for MyBB
 This plugin is aimed to help combat the ever present war on spam, this enables you to check all new registrations to your forum against the stopforumspam.com database to see if they are known spammers. It can check their username, email and IP address.
@@ -11,7 +17,7 @@ When a user registers on a forum their user details (chosen by the administrator
 The idea behind Confidence is to prevent ham - ham being an actual user that is in SFS by mistake or is of a low spam risk - as well as spam.
 
 ### Licence
-© Tim Bell, Tom Moore, 2012 onwards.
+Â© Tim Bell, Tom Moore, 2012 onwards.
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
